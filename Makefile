@@ -96,13 +96,14 @@ install-neutts: check-uv ## Install NeuTTS dependencies via uv
 	$(UV) pip install \
 		"librosa==0.11.0" \
 		"soundfile>=0.13.1" \
-		"numpy==2.2.6" \
 		"gtts>=2.3.0"
 	@echo "${YELLOW}Cloning NeuTTS repository...${RESET}"
 	@rm -rf /tmp/neutts-install
 	@git clone https://github.com/neuphonic/neutts.git /tmp/neutts-install
 	@echo "${YELLOW}Installing NeuTTS requirements...${RESET}"
 	@$(UV) pip install -r /tmp/neutts-install/requirements.txt
+	@echo "${YELLOW}Fixing numpy and pyarrow versions for binary compatibility...${RESET}"
+	@$(UV) pip install "numpy<2" "pyarrow<15.0.0"
 	@echo "${YELLOW}Installing llama-cpp-python for GGUF support...${RESET}"
 	@$(UV) pip install llama-cpp-python
 	@echo "${YELLOW}Installing onnxruntime for codec decoder...${RESET}"
@@ -115,7 +116,8 @@ install-neutts: check-uv ## Install NeuTTS dependencies via uv
 		echo "${GREEN}✓ NeuTTS module copied${RESET}"'
 	@echo "${GREEN}✓ NeuTTS installation complete${RESET}"
 	@echo "${YELLOW}Verifying installation...${RESET}"
-	@$(PYTHON) -c "from neutts import NeuTTS; print('${GREEN}✓ NeuTTS can be imported successfully${RESET}')" || { \
+	@$(PYTHON) -c "from neutts import NeuTTS; print('${GREEN}✓ NeuTTS can be imported successfully${RESET}')" 2>&1 | grep -v "Skipping import" | grep -v "NOTE: Redirects" || true
+	@$(PYTHON) -c "from neutts import NeuTTS" 2>/dev/null && echo "${GREEN}✓ Import successful${RESET}" || { \
 		echo "${RED}✗ Installation verification failed${RESET}"; \
 		exit 1; \
 	}
