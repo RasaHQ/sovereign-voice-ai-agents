@@ -34,7 +34,7 @@ endif
 # ==============================================================================
 help: ## Show this help message
 	@echo ''
-	@echo '${MAGENTA}🎁 Unwrap the Future: Sovereign Voice AI Agents Orchestration${RESET}'
+	@echo '${MAGENTA}🎁 Unwrap the Future: Sovereign Voice Orchestration${RESET}'
 	@echo ''
 	@echo '${YELLOW}Setup Commands:${RESET}'
 	@echo '  ${GREEN}make install${RESET}            - Install all dependencies via uv'
@@ -180,16 +180,7 @@ check-ollama: ## Verify Ollama + Ministral
 .PHONY: check-asr
 check-asr: ## Verify Local ASR server
 	@echo "${YELLOW}Checking Local ASR server...${RESET}"
-	@$(PYTHON) -c "import asyncio, websockets; \
-		async def check(): \
-			try: \
-				async with websockets.connect('ws://localhost:9001', open_timeout=2) as ws: \
-					await ws.close(); \
-					return True; \
-			except: \
-				return False; \
-		result = asyncio.run(check()); \
-		exit(0 if result else 1)" 2>/dev/null || { \
+	@$(PYTHON) scripts/check_asr.py 2>/dev/null || { \
 		echo "${RED}✗ Local ASR server not running${RESET}"; \
 		echo "${YELLOW}  Start: make run-local-asr${RESET}"; \
 		exit 1; \
