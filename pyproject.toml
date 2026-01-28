@@ -1,0 +1,160 @@
+# pyproject.toml
+# Sovereign Voice Orchestration - pyproject.toml
+# 100% local stack: Faster-Whisper + Rasa + Ministral + NeuTTS
+
+[project]
+name = "sovereign-voice-orchestration"
+version = "1.0.0"
+description = "Real-time Voice Orchestration with Rasa, NeuTTS, Faster-Whisper, and Ministral (100% Local)"
+requires-python = ">=3.10,<3.12"
+
+# Core dependencies for the demo
+dependencies = [
+    # Rasa Core
+    "rasa-pro>=3.9.0",
+    "rasa-sdk>=3.8.0",
+    
+    # Networking & Async
+    "aiohttp>=3.9.0",
+    "websockets>=10.0",
+    
+    # Audio Processing
+    "pydub>=0.25.1",
+    "simpleaudio>=1.0.4",
+    
+    # UI & Utilities
+    "rich>=13.0.0",
+    "python-dotenv>=1.0.0",
+    
+    # LLM Support (Ollama - local)
+    # Note: No API keys needed, uses local Ollama
+]
+
+[project.optional-dependencies]
+# Local TTS with NeuTTS Air (sovereign stack)
+neutts = [
+    # Core NeuTTS dependencies
+    "llama-cpp-python>=0.2.0",  # GGUF model support
+    "onnxruntime>=1.16.0",      # Codec decoder
+    "neucodec==0.0.4",          # Neural audio codec
+    "phonemizer>=3.3.0",        # Text to phonemes (requires espeak)
+    
+    # Audio processing
+    "librosa==0.11.0",
+    "soundfile>=0.13.1",
+    "numpy==2.2.6",
+    
+    # ML frameworks
+    "torch>=2.8.0",
+    "transformers>=4.56.1",
+    
+    # User voice generation (GTTS)
+    "gtts>=2.3.0",
+]
+
+# Local ASR with Faster-Whisper (sovereign stack)
+local-asr = [
+    "faster-whisper>=1.0.0",
+    "websockets>=10.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+]
+
+# Cloud alternatives (optional, for comparison/testing only)
+cloud-services = [
+    # These are NOT used in the sovereign stack
+    # but can be enabled for comparison testing
+    "openai>=1.0.0",  # For OpenAI LLM alternative
+    # deepgram-sdk and rime-sdk would go here if needed
+]
+
+# Testing
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+# Development tools
+dev = [
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Explicitly tell setuptools which packages to include
+# This prevents it from trying to compile 'data' or other non-code directories
+packages = ["actions", "services"]
+
+[tool.setuptools.package-data]
+# Include non-Python files in packages
+"*" = ["*.yml", "*.yaml"]
+
+[tool.uv]
+# This ensures uv manages the venv correctly
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = [
+    ".venv",
+    "models",
+    "logs",
+    "tests/audio",  # Exclude generated audio files
+    "__pycache__",
+    ".rasa",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]
+
+[tool.ruff.lint.per-file-ignores]
+"actions/*.py" = ["ANN"]  # Disable annotation warnings in actions
+"services/*.py" = ["ANN"]  # Disable annotation warnings in services
+"demo_live.py" = ["T201"]  # Allow print statements
+"generate_user_audio.py" = ["T201"]  # Allow print statements
+"verify_setup.py" = ["T201"]  # Allow print statements
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "voice: marks tests as voice-specific tests",
+    "integration: marks tests as integration tests",
+    "sovereign: marks tests requiring full sovereign stack",
+]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Rasa doesn't use type hints everywhere
+ignore_missing_imports = true
+
+# Specific ignores for third-party packages
+[[tool.mypy.overrides]]
+module = [
+    "rasa.*",
+    "rasa_sdk.*",
+    "neuttsair.*",
+    "faster_whisper.*",
+    "rich.*",
+    "pydub.*",
+]
+ignore_missing_imports = true
