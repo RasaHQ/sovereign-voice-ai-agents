@@ -102,12 +102,13 @@ install-neutts: check-uv ## Install NeuTTS dependencies via uv
 	@git clone https://github.com/neuphonic/neutts.git /tmp/neutts-install
 	@echo "${YELLOW}Installing NeuTTS requirements...${RESET}"
 	@$(UV) pip install -r /tmp/neutts-install/requirements.txt
-	@echo "${YELLOW}Fixing numpy and pyarrow versions for binary compatibility...${RESET}"
-	@$(UV) pip install "numpy<2" "pyarrow<15.0.0"
 	@echo "${YELLOW}Installing llama-cpp-python for GGUF support...${RESET}"
 	@$(UV) pip install llama-cpp-python
 	@echo "${YELLOW}Installing onnxruntime for codec decoder...${RESET}"
 	@$(UV) pip install onnxruntime
+	@echo "${YELLOW}CRITICAL: Downgrading numpy and pyarrow for binary compatibility...${RESET}"
+	@echo "${YELLOW}This must be done LAST to override Rasa and all other packages${RESET}"
+	@$(UV) pip install --force-reinstall "numpy>=1.24,<2" "pyarrow<15.0.0"
 	@echo "${YELLOW}Copying NeuTTS module to site-packages...${RESET}"
 	@bash -c 'SITE_PACKAGES=$$($(PYTHON) -c "import site; print(site.getsitepackages()[0])"); \
 		echo "Site packages: $$SITE_PACKAGES"; \
@@ -115,15 +116,20 @@ install-neutts: check-uv ## Install NeuTTS dependencies via uv
 		cp -r /tmp/neutts-install/neutts "$$SITE_PACKAGES/"; \
 		echo "${GREEN}✓ NeuTTS module copied${RESET}"'
 	@echo "${GREEN}✓ NeuTTS installation complete${RESET}"
-	@echo "${YELLOW}Verifying installation...${RESET}"
+	@echo "${YELLOW}Verifying NumPy version...${RESET}"
+	@$(PYTHON) -c "import numpy; print(f'NumPy version: {numpy.__version__}'); assert int(numpy.__version__.split(\".\")[0]) < 2, 'NumPy 2.x detected!'"
+	@echo "${YELLOW}Verifying NeuTTS import...${RESET}"
 	@$(PYTHON) -c "from neutts import NeuTTS; print('${GREEN}✓ NeuTTS can be imported successfully${RESET}')" 2>&1 | grep -v "Skipping import" | grep -v "NOTE: Redirects" || true
 	@$(PYTHON) -c "from neutts import NeuTTS" 2>/dev/null && echo "${GREEN}✓ Import successful${RESET}" || { \
 		echo "${RED}✗ Installation verification failed${RESET}"; \
+		echo "${YELLOW}Try running: uv pip install --force-reinstall 'numpy>=1.24,<2'${RESET}"; \
 		exit 1; \
 	}
 	@echo "${YELLOW}Cleaning up...${RESET}"
 	@rm -rf /tmp/neutts-install
 	@echo "${GREEN}✓ All done!${RESET}"
+	@echo "${YELLOW}If you still see NumPy 2.x errors, run:${RESET}"
+	@echo "${YELLOW}  uv pip install --force-reinstall 'numpy>=1.24,<2'${RESET}"
 
 .PHONY: install-local-asr
 install-local-asr: check-uv ## Install Faster-Whisper dependencies via uv
