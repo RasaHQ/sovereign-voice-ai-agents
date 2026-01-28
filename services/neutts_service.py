@@ -86,7 +86,7 @@ class NeuTTSService(TTSEngine[NeuTTSConfig]):
             return
 
         try:
-            from neuttsair.neutts import NeuTTSAir
+            from neutts import NeuTTS
             import librosa
             self._librosa = librosa
         except ImportError as e:
@@ -94,7 +94,7 @@ class NeuTTSService(TTSEngine[NeuTTSConfig]):
 
         logger.info(f"Loading NeuTTS backbone: {self.config.backbone_repo}")
         
-        self.tts = NeuTTSAir(
+        self.tts = NeuTTS(
             backbone_repo=self.config.backbone_repo,
             backbone_device=self.config.device,
             codec_repo=self.config.codec_repo,

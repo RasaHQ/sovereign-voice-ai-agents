@@ -87,46 +87,41 @@ install: check-uv ## Install all dependencies via uv
 install-neutts: check-uv ## Install NeuTTS dependencies via uv
 	@echo "${BLUE}Installing NeuTTS dependencies...${RESET}"
 	@echo "${YELLOW}Checking system dependencies...${RESET}"
-	@command -v espeak >/dev/null 2>&1 || { echo "${RED}✗ espeak not found. Install: brew install espeak${RESET}"; exit 1; }
+	@command -v espeak >/dev/null 2>&1 || command -v espeak-ng >/dev/null 2>&1 || { \
+		echo "${RED}✗ espeak/espeak-ng not found. Install: brew install espeak-ng${RESET}"; \
+		exit 1; \
+	}
 	@echo "${GREEN}✓ espeak found${RESET}"
-	@echo "${YELLOW}Installing Python packages from pyproject.toml...${RESET}"
-	$(UV) pip install -e ".[neutts]" 2>/dev/null || \
-		$(UV) pip install \
-			"llama-cpp-python>=0.2.0" \
-			"onnxruntime>=1.16.0" \
-			"neucodec==0.0.4" \
-			"phonemizer>=3.3.0" \
-			"librosa==0.11.0" \
-			"soundfile>=0.13.1" \
-			"torch>=2.8.0" \
-			"transformers>=4.56.1" \
-			"numpy==2.2.6" \
-			"gtts>=2.3.0"
-	@echo "${YELLOW}Installing neuttsair module...${RESET}"
+	@echo "${YELLOW}Installing core Python packages...${RESET}"
+	$(UV) pip install \
+		"librosa==0.11.0" \
+		"soundfile>=0.13.1" \
+		"numpy==2.2.6" \
+		"gtts>=2.3.0"
+	@echo "${YELLOW}Cloning NeuTTS repository...${RESET}"
+	@rm -rf /tmp/neutts-install
+	@git clone https://github.com/neuphonic/neutts.git /tmp/neutts-install
+	@echo "${YELLOW}Installing NeuTTS requirements...${RESET}"
+	@$(UV) pip install -r /tmp/neutts-install/requirements.txt
+	@echo "${YELLOW}Installing llama-cpp-python for GGUF support...${RESET}"
+	@$(UV) pip install llama-cpp-python
+	@echo "${YELLOW}Installing onnxruntime for codec decoder...${RESET}"
+	@$(UV) pip install onnxruntime
+	@echo "${YELLOW}Copying NeuTTS module to site-packages...${RESET}"
 	@bash -c 'SITE_PACKAGES=$$($(PYTHON) -c "import site; print(site.getsitepackages()[0])"); \
-		if [ ! -d "$$SITE_PACKAGES/neuttsair" ]; then \
-			rm -rf /tmp/neutts-air-install; \
-			git clone https://github.com/neuphonic/neutts-air.git /tmp/neutts-air-install; \
-			mkdir -p "$$SITE_PACKAGES/neuttsair"; \
-			cp /tmp/neutts-air-install/neuttsair/__init__.py "$$SITE_PACKAGES/neuttsair/"; \
-			cp /tmp/neutts-air-install/neuttsair/neutts.py "$$SITE_PACKAGES/neuttsair/"; \
-			rm -rf /tmp/neutts-air-install; \
-			echo "${GREEN}✓ neuttsair installed${RESET}"; \
-		else \
-			echo "${GREEN}✓ neuttsair already installed${RESET}"; \
-		fi'
-	@echo "${YELLOW}Disabling watermarking...${RESET}"
-	@bash -c 'SITE_PACKAGES=$$($(PYTHON) -c "import site; print(site.getsitepackages()[0])"); \
-		NEUTTS_FILE="$$SITE_PACKAGES/neuttsair/neutts.py"; \
-		if grep -q "self.watermarker = perth.PerthImplicitWatermarker()" "$$NEUTTS_FILE" 2>/dev/null; then \
-			cp "$$NEUTTS_FILE" "$${NEUTTS_FILE}.bak"; \
-			sed -i.tmp "s/self.watermarker = perth.PerthImplicitWatermarker()/self.watermarker = None  # Watermarking disabled/g" "$$NEUTTS_FILE"; \
-			rm -f "$${NEUTTS_FILE}.tmp"; \
-			echo "${GREEN}✓ Watermarking disabled${RESET}"; \
-		else \
-			echo "${GREEN}✓ Already disabled${RESET}"; \
-		fi'
+		echo "Site packages: $$SITE_PACKAGES"; \
+		rm -rf "$$SITE_PACKAGES/neutts"; \
+		cp -r /tmp/neutts-install/neutts "$$SITE_PACKAGES/"; \
+		echo "${GREEN}✓ NeuTTS module copied${RESET}"'
 	@echo "${GREEN}✓ NeuTTS installation complete${RESET}"
+	@echo "${YELLOW}Verifying installation...${RESET}"
+	@$(PYTHON) -c "from neutts import NeuTTS; print('${GREEN}✓ NeuTTS can be imported successfully${RESET}')" || { \
+		echo "${RED}✗ Installation verification failed${RESET}"; \
+		exit 1; \
+	}
+	@echo "${YELLOW}Cleaning up...${RESET}"
+	@rm -rf /tmp/neutts-install
+	@echo "${GREEN}✓ All done!${RESET}"
 
 .PHONY: install-local-asr
 install-local-asr: check-uv ## Install Faster-Whisper dependencies via uv

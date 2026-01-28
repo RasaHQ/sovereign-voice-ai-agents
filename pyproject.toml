@@ -31,25 +31,19 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Local TTS with NeuTTS Air (sovereign stack)
+# Local TTS with NeuTTS (sovereign stack)
 neutts = [
-    # Core NeuTTS dependencies
-    "llama-cpp-python>=0.2.0",  # GGUF model support
-    "onnxruntime>=1.16.0",      # Codec decoder
-    "neucodec==0.0.4",          # Neural audio codec
-    "phonemizer>=3.3.0",        # Text to phonemes (requires espeak)
-    
-    # Audio processing
+    # Core audio processing
     "librosa==0.11.0",
     "soundfile>=0.13.1",
     "numpy==2.2.6",
     
-    # ML frameworks
-    "torch>=2.8.0",
-    "transformers>=4.56.1",
-    
     # User voice generation (GTTS)
     "gtts>=2.3.0",
+    
+    # Note: The main NeuTTS package and its dependencies are installed
+    # from the official neutts repository via 'make install-neutts'
+    # This includes: llama-cpp-python, onnxruntime, torch, transformers, etc.
 ]
 
 # Local ASR with Faster-Whisper (sovereign stack)
