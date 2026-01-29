@@ -355,5 +355,5 @@ System Volume Information/
 
 **/_transient-files/
 
-/quack-core/output/
-/quack-core/path/
+.rasa/
+.neutts_cache/
